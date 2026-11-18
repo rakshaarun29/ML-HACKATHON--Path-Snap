@@ -21,8 +21,9 @@ The [new dataset graph](new_dataset_route_f1.svg) and [old-versus-new graph](old
 | Model | Old `student_test` | New `evaluator_test` | Change (percentage points) |
 | --- | ---: | ---: | ---: |
 | RF (Bayesian-Tuned) + Viterbi | 99.03% | 99.27% | +0.24 |
-| Hybrid HMM + RF | 99.36% | 99.64% | +0.28 |
 | HGBC + Viterbi | 97.07% | 96.12% | -0.95 |
+| RF (Bayesian-Tuned, raw) | 93.30% | 92.74% | -0.56 |
+| RF (Old pre-tuning, raw) | 92.84% | 93.04% | +0.20 |
 
 The second graph zooms the horizontal axis to 95–100% so small differences are visible; the first uses a 0–100% scale. A higher score on the new set does not prove a model improved because the trips differ. These graphs only summarize scores already in the repository. They were not used to choose or tune a model. KNN and MLP are omitted because their saved results are point-match scores, not comparable route length F1 on `evaluator_test`.
 

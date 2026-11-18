@@ -22,10 +22,11 @@ DEST = ROOT / "reports"
 
 MODELS = [
     ("RF (Bayesian-Tuned) + Viterbi", "RF_Bayes_Tuned", "RF_Bayes_Tuned"),
-    ("Hybrid HMM + RF", "Hybrid_HMM_RF", "Hybrid_HMM_RF"),
     ("HGBC + Viterbi", "sklearn_HGBC", "sklearn_HGBC"),
+    ("RF (Bayesian-Tuned, raw)", "RF_Bayes_Raw", "RF_Bayes_Raw"),
+    ("RF (Old pre-tuning, raw)", "RF_Old_Raw", "RF_Old_Raw"),
 ]
-COLORS = ["#2563eb", "#0891b2", "#d97706"]
+COLORS = ["#2563eb", "#d97706", "#059669", "#7c3aed"]
 
 
 def read_scores(filename):
@@ -107,18 +108,18 @@ for i, (label, before, after, color) in enumerate(zip(labels, old_means, new_mea
                linewidth=2.5, zorder=3)
     ax.scatter(after, y, s=145, facecolor=color, edgecolor="white",
                linewidth=1, zorder=4)
-    ax.text(95.15, y + 0.24, label, va="center", color="#172033", weight="bold")
+    ax.text(90.15, y + 0.24, label, va="center", color="#172033", weight="bold")
     ax.text(100.16, y, f"{after-before:+.2f} pp", va="center", color=color,
             weight="bold", fontsize=11)
-ax.set_xlim(95, 101.5)
+ax.set_xlim(90, 101.5)
 ax.set_ylim(-0.65, len(MODELS) - 0.3)
 ax.set_yticks([])
-ax.set_xticks([95, 96, 97, 98, 99, 100])
+ax.set_xticks([90, 92, 94, 96, 98, 100])
 ax.xaxis.set_major_formatter(PercentFormatter(100, decimals=0))
 ax.xaxis.grid(True, color="#dce4ee")
 ax.set_axisbelow(True)
 ax.tick_params(axis="x", length=0, pad=9, colors="#243247")
-ax.set_xlabel("Mean route length F1 (zoomed axis: 95–100%)", labelpad=12,
+ax.set_xlabel("Mean route length F1 (zoomed axis: 90–100%)", labelpad=12,
               color="#334155")
 ax.scatter([], [], s=110, facecolor="white", edgecolor="#64748b",
            linewidth=2, label="Old: student_test (10 trips)")
