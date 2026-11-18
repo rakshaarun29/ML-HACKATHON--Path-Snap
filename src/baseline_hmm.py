@@ -6,6 +6,7 @@ decodes the most likely sequence of directed road arcs using Viterbi with
 bounded Dijkstra shortest-path transition distances.
 """
 
+import json
 import math
 import time
 import heapq
@@ -417,6 +418,23 @@ def main():
     out_txt = root / "report" / "results.txt"
     save_results_txt("HMM_Smoothed", result_rows, out_txt)
     print(f"\nSaved accuracies to {out_txt}")
+
+    models_dir = root / "models"
+    models_dir.mkdir(exist_ok=True)
+    model_cfg = {
+        "model": "HMM_Smoothed",
+        "smoothing": {"method": "savgol", "window": 7, "polyorder": 2, "gap_threshold_s": 5.0},
+        "subsample_min_step_m": 20.0,
+        "spatial_index_sample_step_m": 40.0,
+        "cand_radius_m": 60.0,
+        "max_cands": 12,
+        "sigma_z_m": 15.0,
+        "beta_m": 25.0,
+        "initial_state_prior": "uniform_over_candidates",
+    }
+    cfg_path = models_dir / "hmm_config.json"
+    cfg_path.write_text(json.dumps(model_cfg, indent=2) + "\n", encoding="utf-8")
+    print(f"Saved HMM config to {cfg_path}")
 
 
 if __name__ == "__main__":

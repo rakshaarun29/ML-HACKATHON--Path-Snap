@@ -10,6 +10,7 @@ and exponential scores inside Viterbi decoding.
 import math
 import time
 from pathlib import Path
+import joblib
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
 
@@ -300,6 +301,12 @@ def main():
     trans_clf = HistGradientBoostingClassifier(max_iter=100, max_depth=6, random_state=42)
     trans_clf.fit(X_trans, y_trans)
     print(f"Trained HistGradientBoostingClassifiers in {time.perf_counter() - t1:.1f}s\n")
+
+    models_dir = proj_root / "models"
+    models_dir.mkdir(exist_ok=True)
+    model_path = models_dir / "sklearn_hgbc_hmm.joblib"
+    joblib.dump({"emit_clf": emit_clf, "trans_clf": trans_clf}, model_path)
+    print(f"Saved trained sklearn model to {model_path}\n")
 
     test_samples = sorted([d for d in (root / "student_test").iterdir() if d.is_dir()])
     print(f"Evaluating sklearn HMM on {len(test_samples)} student_test samples...\n")
