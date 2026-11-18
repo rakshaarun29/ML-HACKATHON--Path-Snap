@@ -30,9 +30,19 @@ if (LR_RF_DIR / "reports" / "figures").exists():
 if (HMM_DIR / "report").exists():
     app.mount("/figures/hmm", StaticFiles(directory=str(HMM_DIR / "report")), name="hmm_figures")
 
-# Load trained LR/RF models
-rf_model = joblib.load(LR_RF_DIR / "artifacts" / "random_forest_model.joblib")
-lr_model = joblib.load(LR_RF_DIR / "artifacts" / "logistic_regression_model.joblib")
+# Load trained LR/RF model bundles (unwrap dict if saved with metadata)
+def _load_bundle(path: Path):
+    obj = joblib.load(path)
+    if isinstance(obj, dict):
+        est = obj.get("model") or obj.get("estimator") or obj.get("clf") or next(
+            (v for v in obj.values() if hasattr(v, "predict")), None
+        )
+        cols = obj.get("feature_cols") or obj.get("features")
+        return est, cols
+    return obj, None
+
+rf_model, rf_cols = _load_bundle(LR_RF_DIR / "artifacts" / "random_forest_model.joblib")
+lr_model, lr_cols = _load_bundle(LR_RF_DIR / "artifacts" / "logistic_regression_model.joblib")
 
 
 def compress_consecutive(seq):
@@ -121,8 +131,11 @@ def run_inference(track_df: pd.DataFrame, nodes_df: pd.DataFrame, arcs_arr: np.n
             raise HTTPException(status_code=404, detail=f"No precomputed HMM route for trip '{trip_id}'. Use 'random_forest' or 'logistic_regression'.")
     else:
         feat_df = extract_features_for_trip(track_df, nodes_df, arcs_arr)
-        feature_cols = [c for c in feat_df.columns if c not in ("obs_idx", "arc_id")]
-        model = rf_model if model_name == "random_forest" else lr_model
+        model, saved_cols = (rf_model, rf_cols) if model_name == "random_forest" else (lr_model, lr_cols)
+        feature_cols = saved_cols if saved_cols else [c for c in feat_df.columns if c not in ("obs_idx", "arc_id")]
+        for col in feature_cols:
+            if col not in feat_df.columns:
+                feat_df[col] = 0.0
         if hasattr(model, "predict_proba"):
             feat_df["score"] = model.predict_proba(feat_df[feature_cols])[:, 1]
         else:
@@ -216,3 +229,4 @@ async def snap_uploaded_trip(
     nodes = pd.read_csv(nodes_file.file, sep=r"\s+", header=None, names=["lon", "lat"])
     arcs = pd.read_csv(arcs_file.file, sep=r"\s+", header=None, names=["u", "v"]).values
     return run_inference(track, nodes, arcs, model, trip_id="uploaded_trip")
+
