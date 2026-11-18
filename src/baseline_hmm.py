@@ -203,14 +203,15 @@ def hmm_map_match(
     arcs: np.ndarray,
     track_xy: np.ndarray,
     timestamps: np.ndarray = None,
+    use_smoothing: bool = True,
     sigma_z: float = 15.0,
     beta: float = 25.0,
     cand_radius: float = 60.0,
     max_cands: int = 12,
 ):
     """Decode the most likely arc sequence for track_xy using Newson-Krumm HMM + Viterbi."""
-    smoothed_xy = smooth_track(track_xy, timestamps=timestamps)
-    pts = subsample_track(smoothed_xy, min_step_m=20.0)
+    pts_in = smooth_track(track_xy, timestamps=timestamps) if use_smoothing else track_xy
+    pts = subsample_track(pts_in, min_step_m=20.0)
     tree, all_aids, u_xy, v_xy, diff, arc_lens = build_spatial_index(nodes_xy, arcs)
     adj = build_adj(len(nodes_xy), arcs, arc_lens)
 

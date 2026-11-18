@@ -1,4 +1,6 @@
 Student folder/
+evaluator_test/
+evaluator_test.zip
 __pycache__/
 *.pyc
 .DS_Store
