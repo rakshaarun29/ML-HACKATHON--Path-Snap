@@ -167,7 +167,7 @@ def run_inference(track_df: pd.DataFrame, nodes_df: pd.DataFrame, arcs_arr: np.n
 def health():
     return {
         "status": "ok",
-        "models_available": ["random_forest", "logistic_regression", "hmm"],
+        "models_available": ["random_forest", "logistic_regression", "hmm", "rf_bayes_tuned"],
         "local_data_available": DATA_DIR.exists(),
     }
 
@@ -229,4 +229,5 @@ async def snap_uploaded_trip(
     nodes = pd.read_csv(nodes_file.file, sep=r"\s+", header=None, names=["lon", "lat"])
     arcs = pd.read_csv(arcs_file.file, sep=r"\s+", header=None, names=["u", "v"]).values
     return run_inference(track, nodes, arcs, model, trip_id="uploaded_trip")
+
 
