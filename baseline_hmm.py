@@ -79,7 +79,6 @@ def smooth_track(track_xy: np.ndarray, timestamps: np.ndarray = None, window: in
 
 def subsample_track(track_xy: np.ndarray, min_step_m: float = 20.0):
     """Downsample GPS points so consecutive kept points are at least min_step_m apart.
-
     Always preserves the first and last point. Reduces stationary GPS jitter
     (ping-ponging on bidirectional roads) and speeds up Viterbi decoding.
     """
