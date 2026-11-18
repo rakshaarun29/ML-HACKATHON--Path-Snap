@@ -1,0 +1,55 @@
+{
+  "models": [
+    {
+      "name": "Logistic Regression",
+      "family": "Linear/Probabilistic",
+      "config": {
+        "C": 1.0,
+        "scaler": "StandardScaler",
+        "max_iter": 300
+      },
+      "cv_macro_f1": 0.8144,
+      "student_test_top1_acc_pct": 79.04,
+      "route_continuity_pct": 91.47,
+      "student_test_macro_f1": 0.8607,
+      "log_loss": 0.1307,
+      "train_time_sec": 8.89,
+      "artifact": "artifacts/logistic_regression_model.joblib"
+    },
+    {
+      "name": "Random Forest",
+      "family": "Ensemble/Bagging",
+      "config": {
+        "n_estimators": 40,
+        "max_depth": 10,
+        "min_samples_leaf": 30,
+        "max_samples": 0.15
+      },
+      "cv_macro_f1": 0.8499,
+      "student_test_top1_acc_pct": 80.35,
+      "route_continuity_pct": 90.44,
+      "student_test_macro_f1": 0.8891,
+      "log_loss": 0.0943,
+      "train_time_sec": 111.74,
+      "artifact": "artifacts/random_forest_model.joblib"
+    }
+  ],
+  "features": [
+    "perp_dist",
+    "dist_rank",
+    "dist_diff_min",
+    "dist_ratio",
+    "heading_diff",
+    "cos_heading_diff",
+    "speed_mps",
+    "step_dist",
+    "dt",
+    "arc_length",
+    "proj_pos_ratio",
+    "u_in_deg",
+    "v_out_deg",
+    "is_same_arc",
+    "is_direct_conn",
+    "conn_gap_dist"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "Linear Regression (OLS)": {
+    "student_test": {
+      "rmse": 0.43,
+      "r2": 0.2246,
+      "roc_auc": 0.7809,
+      "cand_macro_f1": 0.7216,
+      "route_cnt_f1_pct": 77.86,
+      "route_len_f1_pct": 83.78
+    },
+    "evaluator_test": {
+      "rmse": 0.4319,
+      "r2": 0.2022,
+      "roc_auc": 0.7699,
+      "cand_macro_f1": 0.6802,
+      "route_cnt_f1_pct": 77.07,
+      "route_len_f1_pct": 83.98
+    }
+  },
+  "Random Forest": {
+    "student_test": {
+      "rmse": 0.4024,
+      "r2": 0.321,
+      "roc_auc": 0.8149,
+      "cand_macro_f1": 0.7504,
+      "route_cnt_f1_pct": 76.65,
+      "route_len_f1_pct": 84.21
+    },
+    "evaluator_test": {
+      "rmse": 0.4066,
+      "r2": 0.2929,
+      "roc_auc": 0.8165,
+      "cand_macro_f1": 0.7114,
+      "route_cnt_f1_pct": 75.29,
+      "route_len_f1_pct": 82.86
+    }
+  }
+}
