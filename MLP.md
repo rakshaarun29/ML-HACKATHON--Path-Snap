@@ -21,3 +21,10 @@ The held-out score is the mean fraction of selected GPS point arcs that appear i
 
 On the 16 held-out examples, the MLP point-match score was **78.8%** (mean across examples). The KNN baseline scored **63.9%** on the same split and metric, a difference of **14.9 percentage points**. The full per-example MLP results are in mlp_results.json.
 
+
+## Charts
+
+![KNN versus MLP point-match rates](charts/model_comparison.svg)
+
+![MLP validation score by example](charts/mlp_validation.svg)
+
