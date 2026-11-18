@@ -216,9 +216,10 @@ def main():
         for split, metrics in splits.items():
             print(f"  {split:<15} -> {metrics}")
 
-    with open("linreg_vs_rf_results.json", "w") as f:
+    with open("lr-rf/linreg_vs_rf_results.json", "w") as f:
         json.dump(report, f, indent=2)
     print("\nSaved linreg_vs_rf_results.json")
 
 if __name__ == "__main__":
     main()
+

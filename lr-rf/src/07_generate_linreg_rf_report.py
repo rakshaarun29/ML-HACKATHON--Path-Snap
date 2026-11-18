@@ -163,7 +163,7 @@ plt.close(fig)
 # ---------------------------------------------------------
 # MARKDOWN REPORT (REPORT.md)
 # ---------------------------------------------------------
-report_md = """# Pointwise Map-Matching Evaluation: Linear Regression vs. Random Forest
+report_md = r"""# Pointwise Map-Matching Evaluation: Linear Regression vs. Random Forest
 
 ## 1. Objective & Scope
 This module evaluates **pointwise candidate-scoring models**—comparing linear models (**Linear Regression (OLS)** and **Logistic Regression**) against non-linear tree ensembles (**Random Forest Regressor** and **Random Forest Classifier**)—for GPS-to-road-network map matching without sequential post-processing.
@@ -229,4 +229,5 @@ Models predict continuous arc-membership scores $y \\in \\{0, 1\\}$, and each GP
 """
 
 (OUT_DIR / "REPORT.md").write_text(report_md.strip() + "\n", encoding="utf-8")
-print("Generated 4 figures in reports/linreg_vs_rf/figures/ and reports/linreg_vs_rf/REPORT.md")
+print("Generated 4 figures in lr-rf/reports/figures/ and lr-rf/reports/REPORT.md")
+

@@ -22,7 +22,7 @@ This module evaluates **pointwise candidate-scoring models**—comparing linear 
 ## 3. Quantitative Benchmark Results
 
 ### 3.1 Regression Formulation (`src/06_eval_linreg_vs_rf.py`)
-Models predict continuous arc-membership scores $y \in \{0, 1\}$, and each GPS ping selects the highest-scoring candidate arc ($rg\max_a \hat{y}_a$), followed by consecutive duplicate compression.
+Models predict continuous arc-membership scores $y \\in \\{0, 1\\}$, and each GPS ping selects the highest-scoring candidate arc ($\arg\max_a \hat{y}_a$), followed by consecutive duplicate compression.
 
 | Split | Model | RMSE (↓) | $R^2$ (↑) | ROC-AUC (↑) | Candidate Macro-F1 (↑) | Route Count-F1 (↑) | Route Length-F1 (↑) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
