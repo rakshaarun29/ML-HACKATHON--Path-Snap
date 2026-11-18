@@ -17,6 +17,10 @@ The script uses the same sorted 64/16 example split and the same point-match sco
 
 The held-out score is the mean fraction of selected GPS point arcs that appear in the reference route. This baseline does not connect those arcs into a complete route and cannot be treated as the hackathon's full-route score.
 
+## New evaluator set
+
+The saved MLP model scored **80.7%** mean GPS point-to-road match rate across the 10 journeys in `evaluator_test`. Its per-journey scores and metric definition are in `mlp_evaluator_results.json`. The evaluator `.route` files were used only for scoring; the model was not retrained on this set. KNN scored **59.0%** on the same journeys and metric.
+
 ## Recorded result
 
 On the 16 held-out examples, the MLP point-match score was **78.8%** (mean across examples). The KNN baseline scored **63.9%** on the same split and metric, a difference of **14.9 percentage points**. The full per-example MLP results are in mlp_results.json.

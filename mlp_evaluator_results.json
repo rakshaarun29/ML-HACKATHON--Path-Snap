@@ -1,0 +1,20 @@
+{
+  "model": "MLP",
+  "metric": "mean fraction of GPS point arc matches present in reference route",
+  "test_set": "evaluator_test",
+  "example_count": 10,
+  "per_example_scores": {
+    "00000015": 0.4733002626203677,
+    "00000017": 0.8580980683506686,
+    "00000023": 0.8034934497816594,
+    "00000030": 0.7507645259938838,
+    "00000049": 0.9371688115064345,
+    "00000059": 0.8768186226964112,
+    "00000067": 0.7587336244541485,
+    "00000073": 0.8933566433566433,
+    "00000087": 0.9077912794853467,
+    "00000094": 0.8065015479876161
+  },
+  "mean_score": 0.806602683623318,
+  "note": "This scores point matches, not completed connected routes."
+}
