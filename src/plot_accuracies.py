@@ -88,7 +88,7 @@ def main():
     ax2.set_xlabel("student_test Sample ID", fontsize=11, fontweight="bold")
 
     plt.tight_layout()
-    out_path = txt_path.parent / "accuracy_comparison.png"
+    out_path = Path(sys.argv[2]) if len(sys.argv) > 2 else txt_path.parent / "accuracy_comparison.png"
     plt.savefig(out_path, dpi=180)
     print(f"Loaded {len(models)} models from {txt_path.name} -> saved {out_path.name}")
 
