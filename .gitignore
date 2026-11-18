@@ -1,6 +1,11 @@
 Student folder/
 evaluator_test/
 evaluator_test.zip
+artifacts/*.pkl
+artifacts/baseline_models.joblib
+data/
 __pycache__/
 *.pyc
+.venv/
 .DS_Store
+_hmm_ref/
