@@ -15,6 +15,7 @@ from sklearn.model_selection import KFold, ParameterGrid
 from baseline_hmm import (
     load_sample,
     project_to_meters,
+    smooth_track,
     subsample_track,
     build_spatial_index,
     point_to_segments,
@@ -25,11 +26,18 @@ from baseline_hmm import (
 )
 
 
-def precompute_sample(sample_dir: Path, min_step_m: float, cand_radius: float = 60.0, max_cands: int = 12):
-    """Precompute candidate distances and shortest-path transitions for a sample at min_step_m."""
+def precompute_sample(
+    sample_dir: Path,
+    window: int,
+    min_step_m: float,
+    cand_radius: float = 60.0,
+    max_cands: int = 12,
+):
+    """Precompute candidate distances and shortest-path transitions for a smoothed sample."""
     nodes, arcs, track, route = load_sample(sample_dir)
     nodes_xy, track_xy = project_to_meters(nodes, track[:, :2])
-    pts = subsample_track(track_xy, min_step_m=min_step_m)
+    smoothed_xy = smooth_track(track_xy, timestamps=track[:, 2], window=window, polyorder=2)
+    pts = subsample_track(smoothed_xy, min_step_m=min_step_m)
     tree, all_aids, u_xy, v_xy, diff, arc_lens = build_spatial_index(nodes_xy, arcs)
     adj = build_adj(len(nodes_xy), arcs, arc_lens)
 
@@ -152,21 +160,27 @@ def fast_viterbi(precomputed, sigma_z: float, beta: float):
 
 
 def main():
-    """Run 5-fold CV grid search on train/ and evaluate the best parameters on student_test/."""
-    root = Path(__file__).resolve().parent.parent.parent / "Student folder"
+    """Run 5-fold CV grid search on train/ and evaluate the best parameters on student_test/ & evaluator_test/."""
+    data_root = Path(__file__).resolve().parent.parent.parent
+    root = data_root / "Student folder"
     all_train = sorted([d for d in (root / "train").iterdir() if d.is_dir()])
-    # Pick 30 evenly spaced train samples (excluding >3MB graph outliers for fast CV)
+    # Pick 25 evenly spaced train samples (excluding >2MB graph outliers for fast CV)
     filtered_train = [
-        d for d in all_train if (d / f"{d.name}.arcs").stat().st_size < 3_000_000
+        d for d in all_train if (d / f"{d.name}.arcs").stat().st_size < 2_000_000
     ]
-    step = max(1, len(filtered_train) // 30)
-    train_dirs = filtered_train[::step][:30]
+    step = max(1, len(filtered_train) // 25)
+    train_dirs = filtered_train[::step][:25]
     test_dirs = sorted([d for d in (root / "student_test").iterdir() if d.is_dir()])
+    eval_root = data_root / "evaluator_test" / "evaluator_test"
+    if not eval_root.exists():
+        eval_root = data_root / "evaluator_test"
+    eval_dirs = sorted([d for d in eval_root.iterdir() if d.is_dir()])
 
     param_grid = {
-        "min_step_m": [15.0, 25.0],
-        "sigma_z": [10.0, 15.0, 25.0],
-        "beta": [10.0, 20.0, 35.0, 50.0],
+        "window": [5, 7, 9],
+        "min_step_m": [15.0, 20.0, 25.0],
+        "sigma_z": [10.0, 15.0, 20.0],
+        "beta": [15.0, 25.0, 35.0, 50.0],
     }
     grid = list(ParameterGrid(param_grid))
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -174,20 +188,23 @@ def main():
 
     print(f"5-Fold CV Grid Search on {len(train_dirs)} train samples ({len(grid)} configs)...\n")
 
-    cache_by_step = {}
-    for step_m in param_grid["min_step_m"]:
-        t0 = time.perf_counter()
-        print(f"Precomputing graph/Dijkstra tables for min_step_m={step_m}m...")
-        cache_by_step[step_m] = [precompute_sample(d, min_step_m=step_m) for d in train_dirs]
-        print(f"  Done in {time.perf_counter() - t0:.1f}s")
+    cache_by_prep = {}
+    for w in param_grid["window"]:
+        for step_m in param_grid["min_step_m"]:
+            t0 = time.perf_counter()
+            print(f"Precomputing window={w}, min_step_m={step_m}m...")
+            cache_by_prep[(w, step_m)] = [
+                precompute_sample(d, window=w, min_step_m=step_m) for d in train_dirs
+            ]
+            print(f"  Done in {time.perf_counter() - t0:.1f}s")
 
-    print("\nRunning 5-fold CV over grid:")
-    print(f"{'min_step':>8} {'sigma_z':>8} {'beta':>6} | {'CV Cnt-F1':>10} {'CV Len-F1':>10} {'Std Len-F1':>10}")
-    print("-" * 64)
+    print("\nRunning 5-fold CV over grid (top 10 shown):")
+    print(f"{'win':>4} {'step':>6} {'sigma_z':>8} {'beta':>6} | {'CV Cnt-F1':>10} {'CV Len-F1':>10} {'Std Len-F1':>10}")
+    print("-" * 68)
 
     results = []
     for params in grid:
-        pre_list = cache_by_step[params["min_step_m"]]
+        pre_list = cache_by_prep[(params["window"], params["min_step_m"])]
         sample_metrics = [
             fast_viterbi(pre, sigma_z=params["sigma_z"], beta=params["beta"])
             for pre in pre_list
@@ -203,41 +220,36 @@ def main():
         mean_len = float(np.mean(fold_len_f1))
         std_len = float(np.std(fold_len_f1))
         results.append((mean_len, mean_cnt, std_len, params))
+
+    results.sort(key=lambda x: (x[0] + x[1]), reverse=True)
+    for mean_len, mean_cnt, std_len, params in results[:10]:
         print(
-            f"{params['min_step_m']:>8.1f} {params['sigma_z']:>8.1f} {params['beta']:>6.1f} | "
+            f"{params['window']:>4d} {params['min_step_m']:>6.1f} {params['sigma_z']:>8.1f} {params['beta']:>6.1f} | "
             f"{mean_cnt*100:>9.2f}% {mean_len*100:>9.2f}% {std_len*100:>9.2f}%"
         )
 
-    results.sort(key=lambda x: x[0], reverse=True)
     best_len, best_cnt, best_std, best_params = results[0]
-    print("-" * 64)
-    print(f"Best CV params (by Len-F1): {best_params}")
+    print("-" * 68)
+    print(f"Best CV params: {best_params}")
     print(f"  5-Fold CV Len-F1: {best_len*100:.2f}% (+/- {best_std*100:.2f}%), Cnt-F1: {best_cnt*100:.2f}%\n")
 
-    # Evaluate best params on held-out student_test
-    print(f"Evaluating best CV params on {len(test_dirs)} student_test samples...")
-    print(f"{'Sample':<10} {'Pred':>6} {'True':>6} {'Cnt-F1':>8} {'Len-P':>8} {'Len-R':>8} {'Len-F1':>8}")
-    print("-" * 62)
-
-    test_metrics = []
-    for s in test_dirs:
-        pre = precompute_sample(s, min_step_m=best_params["min_step_m"])
-        m = fast_viterbi(pre, sigma_z=best_params["sigma_z"], beta=best_params["beta"])
-        test_metrics.append(m)
+    for split_name, dirs in [("student_test", test_dirs), ("evaluator_test", eval_dirs)]:
+        print(f"Evaluating best CV params on {len(dirs)} {split_name} samples...")
+        split_metrics = []
+        for s in dirs:
+            pre = precompute_sample(s, window=best_params["window"], min_step_m=best_params["min_step_m"])
+            m = fast_viterbi(pre, sigma_z=best_params["sigma_z"], beta=best_params["beta"])
+            split_metrics.append(m)
+            print(
+                f"  {s.name:<10} pred={m['pred_n']:>4} true={m['true_n']:>4} "
+                f"Cnt-F1={m['f1_cnt']*100:>6.2f}% Len-F1={m['f1_len']*100:>6.2f}%"
+            )
         print(
-            f"{s.name:<10} {m['pred_n']:>6} {m['true_n']:>6} "
-            f"{m['f1_cnt']*100:>7.2f}% {m['prec_len']*100:>7.2f}% "
-            f"{m['rec_len']*100:>7.2f}% {m['f1_len']*100:>7.2f}%"
+            f"  MEAN {split_name}: Cnt-F1={np.mean([m['f1_cnt'] for m in split_metrics])*100:.2f}% | "
+            f"Len-P={np.mean([m['prec_len'] for m in split_metrics])*100:.2f}% | "
+            f"Len-R={np.mean([m['rec_len'] for m in split_metrics])*100:.2f}% | "
+            f"Len-F1={np.mean([m['f1_len'] for m in split_metrics])*100:.2f}%\n"
         )
-
-    print("-" * 62)
-    print(
-        f"{'MEAN':<10} {'':>6} {'':>6} "
-        f"{np.mean([m['f1_cnt'] for m in test_metrics])*100:>7.2f}% "
-        f"{np.mean([m['prec_len'] for m in test_metrics])*100:>7.2f}% "
-        f"{np.mean([m['rec_len'] for m in test_metrics])*100:>7.2f}% "
-        f"{np.mean([m['f1_len'] for m in test_metrics])*100:>7.2f}%"
-    )
 
 
 if __name__ == "__main__":
