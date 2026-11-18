@@ -20,11 +20,12 @@ The [new dataset graph](new_dataset_route_f1.svg) and [old-versus-new graph](old
 
 | Model | Old `student_test` | New `evaluator_test` | Change (percentage points) |
 | --- | ---: | ---: | ---: |
-| RF (Bayesian-Tuned) + Viterbi | 99.03% | 99.27% | +0.24 |
-| HGBC + Viterbi | 97.07% | 96.12% | -0.95 |
-| RF (Bayesian-Tuned, smoothed raw) | 93.30% | 92.74% | -0.55 |
-| RF (Old pre-tuning, smoothed raw) | 92.84% | 93.04% | +0.20 |
-| RF (Old pre-tuning, unsmoothed `lr-rf`) | 80.35% (Top-1) | 84.64% (Len-F1) | — |
+| RF (Bayesian-Tuned) + Viterbi | 99.03% (Len-F1) / 98.47% (Cnt-F1) | 99.27% (Len-F1) / 98.16% (Cnt-F1) | +0.24 (Len-F1) |
+| HGBC + Viterbi | 97.07% (Len-F1) / 95.89% (Cnt-F1) | 96.12% (Len-F1) / 93.21% (Cnt-F1) | -0.95 (Len-F1) |
+| RF (Bayesian-Tuned, smoothed raw) | 93.30% (Len-F1) / 83.00% (Cnt-F1) | 92.74% (Len-F1) / 81.54% (Cnt-F1) | -0.55 (Len-F1) |
+| RF (Old pre-tuning, smoothed raw) | 92.84% (Len-F1) / 81.35% (Cnt-F1) | 93.04% (Len-F1) / 81.68% (Cnt-F1) | +0.20 (Len-F1) |
+| RF Regressor (unsmoothed [`lr-rf/reports/REPORT.md`](../lr-rf/reports/REPORT.md)) | 84.21% (Len-F1) / 76.65% (Cnt-F1) | 82.86% (Len-F1) / 75.29% (Cnt-F1) | -1.35 (Len-F1) |
+| RF Classifier (unsmoothed [`lr-rf/reports/REPORT.md`](../lr-rf/reports/REPORT.md)) | 80.35% (Top-1) | 84.64% (Len-F1) / 77.71% (Cnt-F1) | — |
 
 The second graph zooms the horizontal axis to 95–100% so small differences are visible; the first uses a 0–100% scale. A higher score on the new set does not prove a model improved because the trips differ. These graphs only summarize scores already in the repository. They were not used to choose or tune a model. KNN and MLP are omitted because their saved results are point-match scores, not comparable route length F1 on `evaluator_test`.
 
