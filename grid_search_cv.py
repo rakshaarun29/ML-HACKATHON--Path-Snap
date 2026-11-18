@@ -1,3 +1,11 @@
+"""5-Fold Cross-Validation Grid Search for the HMM map-matching hyperparameters.
+
+Uses sklearn.model_selection.KFold and ParameterGrid over (min_step_m, sigma_z, beta).
+To keep grid search fast, candidate distances and Dijkstra shortest paths are
+precomputed once per min_step_m, so each (sigma_z, beta) evaluation only runs
+a lightweight Viterbi pass.
+"""
+
 import math
 import time
 from pathlib import Path
@@ -13,12 +21,12 @@ from baseline_hmm import (
     build_adj,
     dijkstra_to_targets,
     reconstruct_node_path,
-    hmm_map_match,
     evaluate_route,
 )
 
 
 def precompute_sample(sample_dir: Path, min_step_m: float, cand_radius: float = 60.0, max_cands: int = 12):
+    """Precompute candidate distances and shortest-path transitions for a sample at min_step_m."""
     nodes, arcs, track, route = load_sample(sample_dir)
     nodes_xy, track_xy = project_to_meters(nodes, track[:, :2])
     pts = subsample_track(track_xy, min_step_m=min_step_m)
@@ -41,7 +49,7 @@ def precompute_sample(sample_dir: Path, min_step_m: float, cand_radius: float = 
         order = np.argsort(dists)[:max_cands]
         candidates.append((cands[order].tolist(), dists[order].tolist(), fracs[order].tolist()))
 
-    # Precompute transition distances & intermediate arcs for each step t
+    # Cache transition |r_dist - d_euclid| and intermediate arcs so sigma_z/beta can vary freely
     steps = []
     for t in range(1, len(pts)):
         d_euclid = math.hypot(pts[t, 0] - pts[t - 1, 0], pts[t, 1] - pts[t - 1, 1])
@@ -56,7 +64,7 @@ def precompute_sample(sample_dir: Path, min_step_m: float, cand_radius: float = 
             if v_i not in dijk_cache:
                 dijk_cache[v_i] = dijkstra_to_targets(adj, v_i, target_nodes, max_route_dist)
 
-        edges = []  # (i, j, abs_diff, mid_arcs, connected)
+        edges = []  # (prev_idx, curr_idx, abs_diff_m, mid_arcs, connected)
         for i, (a_i, f_i) in enumerate(zip(prev_aids, prev_fracs)):
             v_i = int(arcs[a_i, 1])
             found, prev_map = dijk_cache[v_i]
@@ -87,6 +95,7 @@ def precompute_sample(sample_dir: Path, min_step_m: float, cand_radius: float = 
 
 
 def fast_viterbi(precomputed, sigma_z: float, beta: float):
+    """Run Viterbi decoding on precomputed sample tables for a given (sigma_z, beta)."""
     candidates, steps, route, arc_lens = precomputed
     inv_2sig2 = -0.5 / (sigma_z * sigma_z)
     inv_beta = -1.0 / beta
@@ -143,8 +152,15 @@ def fast_viterbi(precomputed, sigma_z: float, beta: float):
 
 
 def main():
+    """Run 5-fold CV grid search on train/ and evaluate the best parameters on student_test/."""
     root = Path(__file__).resolve().parent / "Student folder"
-    train_dirs = sorted([d for d in (root / "train").iterdir() if d.is_dir()])
+    all_train = sorted([d for d in (root / "train").iterdir() if d.is_dir()])
+    # Pick 30 evenly spaced train samples (excluding >3MB graph outliers for fast CV)
+    filtered_train = [
+        d for d in all_train if (d / f"{d.name}.arcs").stat().st_size < 3_000_000
+    ]
+    step = max(1, len(filtered_train) // 30)
+    train_dirs = filtered_train[::step][:30]
     test_dirs = sorted([d for d in (root / "student_test").iterdir() if d.is_dir()])
 
     param_grid = {

@@ -1,26 +1,42 @@
+"""Newson-Krumm style HMM + Viterbi map-matching baseline.
+
+Projects road networks and GPS tracks into local metric coordinates, subsamples
+noisy 1 Hz GPS points, builds a cKDTree spatial index over road segments, and
+decodes the most likely sequence of directed road arcs using Viterbi with
+bounded Dijkstra shortest-path transition distances.
+"""
+
 import math
 import time
 import heapq
 from pathlib import Path
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.signal import savgol_filter
 
 
 def load_sample(sample_dir: Path):
+    """Load .nodes, .arcs, .track, and .route files for a single sample directory."""
     sid = sample_dir.name
     nodes = np.loadtxt(sample_dir / f"{sid}.nodes", dtype=np.float64)
     arcs = np.loadtxt(sample_dir / f"{sid}.arcs", dtype=np.int32)
     track = np.loadtxt(sample_dir / f"{sid}.track", dtype=np.float64)
     route = np.loadtxt(sample_dir / f"{sid}.route", dtype=np.int32).tolist()
+    # np.loadtxt returns a scalar int if .route has only a single arc
     if isinstance(route, int):
         route = [route]
     return nodes, arcs, track, route
 
 
 def project_to_meters(nodes_lonlat: np.ndarray, track_lonlat: np.ndarray):
+    """Project (lon, lat) coordinates to local (x, y) meters via equirectangular projection.
+
+    Centers the projection at the mean road-node coordinates so Euclidean
+    distances and point-to-segment projections are accurate at city/region scale.
+    """
     lon0 = float(np.mean(nodes_lonlat[:, 0]))
     lat0 = float(np.mean(nodes_lonlat[:, 1]))
-    scale_x = math.cos(math.radians(lat0)) * 111320.0
+    scale_x = math.cos(math.radians(lat0)) * 111320.0 #111320 is how many meters correspond to one degree along the equator
     scale_y = 111320.0
 
     nodes_xy = np.empty_like(nodes_lonlat)
@@ -33,7 +49,40 @@ def project_to_meters(nodes_lonlat: np.ndarray, track_lonlat: np.ndarray):
     return nodes_xy, track_xy
 
 
+def smooth_track(track_xy: np.ndarray, timestamps: np.ndarray = None, window: int = 7, polyorder: int = 2):
+    """Smooth 1 Hz GPS jitter using a gap-aware Savitzky-Golay filter.
+
+    Splits the trajectory at large time gaps (dt > 5s) so smoothing never
+    smears across dropped-signal jumps, and preserves exact start/end points.
+    """
+    n = len(track_xy)
+    if n < window:
+        return track_xy
+
+    smoothed = track_xy.copy()
+    # Identify contiguous segments without large timestamp gaps
+    if timestamps is not None and len(timestamps) == n:
+        dts = np.diff(timestamps)
+        breaks = np.where(dts > 5.0)[0] + 1
+        segments = np.split(np.arange(n), breaks)
+    else:
+        segments = [np.arange(n)]
+
+    for seg in segments:
+        if len(seg) >= window:
+            smoothed[seg] = savgol_filter(track_xy[seg], window_length=window, polyorder=polyorder, axis=0)
+            # Keep exact segment endpoints to avoid boundary distortion
+            smoothed[seg[0]] = track_xy[seg[0]]
+            smoothed[seg[-1]] = track_xy[seg[-1]]
+    return smoothed
+
+
 def subsample_track(track_xy: np.ndarray, min_step_m: float = 20.0):
+    """Downsample GPS points so consecutive kept points are at least min_step_m apart.
+
+    Always preserves the first and last point. Reduces stationary GPS jitter
+    (ping-ponging on bidirectional roads) and speeds up Viterbi decoding.
+    """
     if len(track_xy) <= 2:
         return track_xy
     kept = [0]
@@ -48,6 +97,11 @@ def subsample_track(track_xy: np.ndarray, min_step_m: float = 20.0):
 
 
 def build_spatial_index(nodes_xy: np.ndarray, arcs: np.ndarray, sample_step_m: float = 40.0):
+    """Build a cKDTree over points sampled along every directed arc.
+
+    Sampling intermediate points every sample_step_m ensures long highway arcs
+    are still found even when a GPS point is far from both endpoints.
+    """
     u_xy = nodes_xy[arcs[:, 0]]
     v_xy = nodes_xy[arcs[:, 1]]
     diff = v_xy - u_xy
@@ -55,23 +109,23 @@ def build_spatial_index(nodes_xy: np.ndarray, arcs: np.ndarray, sample_step_m: f
 
     pts_list = []
     arc_ids_list = []
-    # Sample midpoints + intermediate points for long arcs
     counts = np.maximum(1, np.ceil(arc_lens / sample_step_m).astype(np.int32))
-    max_k = int(counts.max())
-    # Vectorized for k=1, loop only for longer arcs
+
+    # Include midpoints for all arcs
     mids = 0.5 * (u_xy + v_xy)
     pts_list.append(mids)
     arc_ids_list.append(np.arange(len(arcs), dtype=np.int32))
 
+    # Add interior sample points for arcs longer than sample_step_m
     long_idx = np.where(counts > 1)[0]
     for aid in long_idx:
         k = counts[aid]
-        ts = np.linspace(0.0, 1.0, k + 1)[1:-1]  # endpoints already covered by neighbors/mid
+        ts = np.linspace(0.0, 1.0, k + 1)[1:-1]
         pts = u_xy[aid] + ts[:, None] * diff[aid]
         pts_list.append(pts)
         arc_ids_list.append(np.full(len(ts), aid, dtype=np.int32))
 
-    # Also include start/end nodes slightly inset
+    # Include start and end vertices so queries near intersections hit all incident arcs
     pts_list.append(u_xy)
     arc_ids_list.append(np.arange(len(arcs), dtype=np.int32))
     pts_list.append(v_xy)
@@ -84,6 +138,7 @@ def build_spatial_index(nodes_xy: np.ndarray, arcs: np.ndarray, sample_step_m: f
 
 
 def point_to_segments(p: np.ndarray, u_xy: np.ndarray, diff: np.ndarray, arc_lens: np.ndarray, cand_arcs: np.ndarray):
+    """Compute exact Euclidean distances and clamped projection fractions [0, 1] from p to cand_arcs."""
     u = u_xy[cand_arcs]
     d = diff[cand_arcs]
     L = arc_lens[cand_arcs]
@@ -97,6 +152,7 @@ def point_to_segments(p: np.ndarray, u_xy: np.ndarray, diff: np.ndarray, arc_len
 
 
 def build_adj(num_nodes: int, arcs: np.ndarray, arc_lens: np.ndarray):
+    """Build directed adjacency list: adj[u] -> list of (v, length_m, arc_id)."""
     adj = [[] for _ in range(num_nodes)]
     for aid, (u, v) in enumerate(arcs):
         adj[u].append((v, float(arc_lens[aid]), aid))
@@ -104,6 +160,7 @@ def build_adj(num_nodes: int, arcs: np.ndarray, arc_lens: np.ndarray):
 
 
 def dijkstra_to_targets(adj, start_node: int, targets: set, max_dist: float):
+    """Run bounded Dijkstra from start_node until all target nodes are settled or max_dist is exceeded."""
     if not targets:
         return {}, {}
     dist = {start_node: 0.0}
@@ -130,6 +187,7 @@ def dijkstra_to_targets(adj, start_node: int, targets: set, max_dist: float):
 
 
 def reconstruct_node_path(prev: dict, start_node: int, end_node: int):
+    """Backtrack Dijkstra's prev map to recover the sequence of arc IDs from start_node to end_node."""
     path = []
     cur = end_node
     while cur != start_node:
@@ -144,22 +202,25 @@ def hmm_map_match(
     nodes_xy: np.ndarray,
     arcs: np.ndarray,
     track_xy: np.ndarray,
+    timestamps: np.ndarray = None,
     sigma_z: float = 15.0,
     beta: float = 25.0,
     cand_radius: float = 60.0,
     max_cands: int = 12,
 ):
-    pts = subsample_track(track_xy, min_step_m=20.0)
+    """Decode the most likely arc sequence for track_xy using Newson-Krumm HMM + Viterbi."""
+    smoothed_xy = smooth_track(track_xy, timestamps=timestamps)
+    pts = subsample_track(smoothed_xy, min_step_m=20.0)
     tree, all_aids, u_xy, v_xy, diff, arc_lens = build_spatial_index(nodes_xy, arcs)
     adj = build_adj(len(nodes_xy), arcs, arc_lens)
 
-    # Gather candidates for each point
+    # 1. Candidate selection & Gaussian emission log-probabilities at each subsampled point
     candidates = []
     for p in pts:
-        r = cand_radius
         cands = np.array([], dtype=np.int32)
+        # Expand search radius progressively if no road is within cand_radius
         for mult in (1.0, 2.5, 6.0):
-            idxs = tree.query_ball_point(p, r * mult)
+            idxs = tree.query_ball_point(p, cand_radius * mult)
             if idxs:
                 cands = np.unique(all_aids[idxs])
                 break
@@ -175,10 +236,10 @@ def hmm_map_match(
         emit_logp = -0.5 * (dists / sigma_z) ** 2
         candidates.append(list(zip(cands.tolist(), fracs.tolist(), emit_logp.tolist())))
 
-    # Viterbi
+    # 2. Viterbi forward pass with exponential route-vs-Euclidean transition log-probabilities
     T = len(pts)
     dp = [c[2] for c in candidates[0]]
-    back = []  # back[t-1][j] = (best_i, intermediate_arcs)
+    back = []  # back[t-1][j] = (best_prev_idx, intermediate_arcs)
 
     for t in range(1, T):
         d_euclid = math.hypot(pts[t, 0] - pts[t - 1, 0], pts[t, 1] - pts[t - 1, 1])
@@ -188,7 +249,7 @@ def hmm_map_match(
         curr_cands = candidates[t]
         target_nodes = {int(arcs[a, 0]) for a, _, _ in curr_cands}
 
-        # Cache Dijkstra per unique end-node of prev_cands
+        # Run Dijkstra once per unique end-node v_i of previous candidates
         dijk_cache = {}
         for a_i, _, _ in prev_cands:
             v_i = int(arcs[a_i, 1])
@@ -210,16 +271,19 @@ def hmm_map_match(
                 ent_j = f_j * float(arc_lens[a_j])
 
                 if a_i == a_j and f_j >= f_i:
+                    # Moving forward along the same arc
                     r_dist = (f_j - f_i) * float(arc_lens[a_i])
                     mid_arcs = []
                 elif v_i == u_j:
+                    # Direct transition to an adjacent arc
                     r_dist = rem_i + ent_j
                     mid_arcs = []
                 elif u_j in found:
+                    # Connected via shortest path in the road graph
                     r_dist = rem_i + found[u_j] + ent_j
                     mid_arcs = reconstruct_node_path(prev_map, v_i, u_j)
                 else:
-                    # Fallback penalty if disconnected
+                    # Disconnected or beyond max_route_dist: apply fixed detour penalty
                     r_dist = d_euclid + 500.0
                     mid_arcs = []
 
@@ -229,7 +293,7 @@ def hmm_map_match(
                     new_dp[j] = score
                     step_back[j] = (i, mid_arcs)
 
-        # If all transitions failed, reset to emission-only from best prev
+        # Fallback if all transitions were pruned: keep best previous state with penalty
         if max(new_dp) <= -1e17:
             best_i = max(range(len(dp)), key=lambda k: dp[k])
             for j, (_, _, emit_j) in enumerate(curr_cands):
@@ -239,7 +303,7 @@ def hmm_map_match(
         dp = new_dp
         back.append(step_back)
 
-    # Backtrack
+    # 3. Backtrack Viterbi pointers and stitch intermediate shortest-path arcs
     cur_idx = max(range(len(dp)), key=lambda k: dp[k])
     chosen_arcs = [candidates[-1][cur_idx][0]]
     rev_segments = []
@@ -252,6 +316,7 @@ def hmm_map_match(
     chosen_arcs.reverse()
     rev_segments.reverse()
 
+    # Deduplicate consecutive identical arc IDs when concatenating segments
     full_route = [chosen_arcs[0]]
     for t in range(len(rev_segments)):
         for a in rev_segments[t]:
@@ -264,6 +329,7 @@ def hmm_map_match(
 
 
 def evaluate_route(pred: list, true: list, arc_lens: np.ndarray):
+    """Compute arc-count F1 (Cnt-F1) and length-weighted Precision/Recall/F1 (Len-F1)."""
     pred_set = set(pred)
     true_set = set(true)
     inter = pred_set & true_set
@@ -292,6 +358,7 @@ def evaluate_route(pred: list, true: list, arc_lens: np.ndarray):
 
 
 def main():
+    """Run and benchmark the HMM baseline across all student_test samples."""
     base = Path(__file__).resolve().parent / "Student folder" / "student_test"
     samples = sorted([d for d in base.iterdir() if d.is_dir()])
 
@@ -304,7 +371,7 @@ def main():
         t0 = time.perf_counter()
         nodes, arcs, track, route = load_sample(s)
         nodes_xy, track_xy = project_to_meters(nodes, track[:, :2])
-        pred_route, arc_lens = hmm_map_match(nodes_xy, arcs, track_xy)
+        pred_route, arc_lens = hmm_map_match(nodes_xy, arcs, track_xy, timestamps=track[:, 2])
         dt = time.perf_counter() - t0
         m = evaluate_route(pred_route, route, arc_lens)
         metrics.append(m)

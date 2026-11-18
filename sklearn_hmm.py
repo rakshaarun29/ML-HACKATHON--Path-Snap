@@ -1,3 +1,12 @@
+"""ML-augmented HMM map-matcher using scikit-learn HistGradientBoostingClassifiers.
+
+Trains two binary classifiers on the 80 train samples:
+  1. emit_clf: predicts whether a candidate arc at step t belongs to the true route.
+  2. trans_clf: predicts whether a candidate transition (a_i -> a_j) is valid.
+During inference, predicted log-probabilities replace the analytical Gaussian
+and exponential scores inside Viterbi decoding.
+"""
+
 import math
 import time
 from pathlib import Path
@@ -18,6 +27,7 @@ from baseline_hmm import (
 
 
 def compute_track_headings(pts: np.ndarray) -> np.ndarray:
+    """Compute unit direction vectors at each subsampled GPS point using finite differences."""
     T = len(pts)
     headings = np.zeros((T, 2), dtype=np.float64)
     for t in range(T):
@@ -37,6 +47,7 @@ def compute_track_headings(pts: np.ndarray) -> np.ndarray:
 
 
 def extract_candidates(pts, tree, all_aids, u_xy, diff, arc_lens, cand_radius=60.0, max_cands=10):
+    """Find top-k candidate arcs and build 6 emission features per candidate at each step."""
     headings = compute_track_headings(pts)
     candidates = []
     for t, p in enumerate(pts):
@@ -60,6 +71,7 @@ def extract_candidates(pts, tree, all_aids, u_xy, diff, arc_lens, cand_radius=60
         step_cands = []
         for rank, (aid, dist, frac) in enumerate(zip(cands.tolist(), dists.tolist(), fracs.tolist())):
             L = float(arc_lens[aid])
+            # Cosine alignment between GPS heading and directed arc vector
             if L > 1e-6 and (hx != 0.0 or hy != 0.0):
                 cos_h = (diff[aid, 0] * hx + diff[aid, 1] * hy) / L
             else:
@@ -72,6 +84,7 @@ def extract_candidates(pts, tree, all_aids, u_xy, diff, arc_lens, cand_radius=60
 
 
 def transition_features(arcs, diff, arc_lens, a_i, f_i, a_j, f_j, d_euclid, r_dist, connected):
+    """Build 9 transition features for moving from candidate arc a_i to candidate arc a_j."""
     u_i, v_i = int(arcs[a_i, 0]), int(arcs[a_i, 1])
     u_j, v_j = int(arcs[a_j, 0]), int(arcs[a_j, 1])
     L_i = float(arc_lens[a_i])
@@ -99,6 +112,7 @@ def transition_features(arcs, diff, arc_lens, a_i, f_i, a_j, f_j, d_euclid, r_di
 
 
 def collect_training_data(train_dir: Path, max_samples: int = 80):
+    """Extract emission and transition feature matrices and binary labels from train samples."""
     samples = sorted([d for d in train_dir.iterdir() if d.is_dir()])[:max_samples]
     X_emit, y_emit = [], []
     X_trans, y_trans = [], []
@@ -112,11 +126,13 @@ def collect_training_data(train_dir: Path, max_samples: int = 80):
         adj = build_adj(len(nodes_xy), arcs, arc_lens)
         candidates = extract_candidates(pts, tree, all_aids, u_xy, diff, arc_lens)
 
+        # Label each candidate arc 1 if it appears in the ground-truth route
         for step_cands in candidates:
             for aid, _, feat in step_cands:
                 X_emit.append(feat)
                 y_emit.append(1 if aid in true_set else 0)
 
+        # Label each candidate pair (a_i -> a_j) 1 if both are in true_set and connected
         for t in range(1, len(pts)):
             d_euclid = math.hypot(pts[t, 0] - pts[t - 1, 0], pts[t, 1] - pts[t - 1, 1])
             max_route_dist = max(4.0 * d_euclid + 250.0, 500.0)
@@ -165,12 +181,13 @@ def collect_training_data(train_dir: Path, max_samples: int = 80):
 
 
 def sklearn_hmm_match(nodes_xy, arcs, track_xy, emit_clf, trans_clf):
+    """Run Viterbi decoding using log-probabilities from trained sklearn classifiers."""
     pts = subsample_track(track_xy, min_step_m=20.0)
     tree, all_aids, u_xy, v_xy, diff, arc_lens = build_spatial_index(nodes_xy, arcs)
     adj = build_adj(len(nodes_xy), arcs, arc_lens)
     candidates = extract_candidates(pts, tree, all_aids, u_xy, diff, arc_lens)
 
-    # Batch predict emission log-probs
+    # Batch-predict emission log-probabilities for all steps at once
     all_emit_feats = np.asarray([c[2] for step in candidates for c in step], dtype=np.float32)
     emit_probs = np.clip(emit_clf.predict_proba(all_emit_feats)[:, 1], 1e-6, 1.0 - 1e-6)
     emit_logps = np.log(emit_probs)
@@ -243,6 +260,7 @@ def sklearn_hmm_match(nodes_xy, arcs, track_xy, emit_clf, trans_clf):
         dp = new_dp
         back.append(step_back)
 
+    # Backtrack Viterbi pointers and reconstruct full arc sequence
     cur_idx = max(range(len(dp)), key=lambda k: dp[k])
     chosen_arcs = [candidates[-1][cur_idx][0]]
     rev_segments = []
@@ -267,6 +285,7 @@ def sklearn_hmm_match(nodes_xy, arcs, track_xy, emit_clf, trans_clf):
 
 
 def main():
+    """Train HGBC emission/transition classifiers on train/ and evaluate on student_test/."""
     root = Path(__file__).resolve().parent / "Student folder"
     t0 = time.perf_counter()
     print("Extracting features from train (80 samples)...")
