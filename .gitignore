@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+data/
+train/
+student_test/
+Student folder/
+artifacts/
+*.zip
