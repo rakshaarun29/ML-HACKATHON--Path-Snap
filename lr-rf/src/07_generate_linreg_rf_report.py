@@ -3,11 +3,11 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-OUT_DIR = Path("reports/linreg_vs_rf")
+OUT_DIR = Path("lr-rf/reports")
 FIG_DIR = OUT_DIR / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-with open("linreg_vs_rf_results.json", "r", encoding="utf-8") as f:
+with open("lr-rf/linreg_vs_rf_results.json", "r", encoding="utf-8") as f:
     reg_res = json.load(f)
 
 plt.rcParams.update({
