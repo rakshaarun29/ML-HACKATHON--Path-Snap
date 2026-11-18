@@ -94,20 +94,3 @@ Each sample `<id>` contains 4 whitespace/tab-delimited files (0-indexed, no head
 
 ---
 
-## 3. Other Models You Can Use
-
-### 1. Enhanced Probabilistic & Graph Models (Best Accuracy / Speed)
-- **ST-Matching (Spatial-Temporal HMM)**: Extends `baseline_hmm.py` with:
-  - **GPS heading alignment**: Penalizes candidate arcs whose direction opposes the local trajectory vector (reduces wrong-way / parallel-street errors).
-  - **Temporal/speed consistency**: Uses `dt` from `.track` to penalize impossible speeds during GPS jumps or long gaps (e.g., the `210s` gap in `00000065`).
-  - **U-turn & turn-angle penalties**: Prevents bouncing back and forth on bidirectional roads (which caused over-prediction on `00000077`).
-- **Kalman / Savitzky–Golay Smoothing + HMM**: Smooths raw 1 Hz GPS jitter *before* subsampling and matching.
-- **Particle Filter / Rauch–Tung–Striebel Smoother on Graph**: Maintains particles constrained to road arcs and resamples using GPS likelihood.
-
-### 2. Structured & Linear-Chain ML Models (Best ML Fit)
-- **Linear-Chain CRF / Structured Perceptron**: Learns weights directly over the **Viterbi-decoded sequence** rather than independent per-step binary classification, avoiding probability saturation on detours.
-- **Log-Linear Feature Model (`sklearn.linear_model.LogisticRegression` / `SGDClassifier`)**: Using linear weights on `[-dist^2, -|r_dist - d_euclid|, cos(delta_theta), is_uturn]` inside Viterbi directly learns optimal HMM parameters without saturation.
-- **Gradient Boosted Rankers (`LightGBM` / `XGBoost` / `CatBoost`)**: Trained with pairwise/ranking loss (`lambdarank`) over candidate arcs at each step, then decoded with Viterbi.
-
-### 3. Deep Learning / Graph Models (Heavier, Needs PyTorch/GPU)
-- **BiGRU / Transformer + Road-Graph Attention (e.g., *DeepMM*, *L2MM*, *GraphMM*)**: Encodes the GPS sequence with a Transformer/RNN and uses a GNN (GAT/GCN) over the local road subgraph to score arc transitions, followed by Viterbi or beam search to enforce graph connectivity.

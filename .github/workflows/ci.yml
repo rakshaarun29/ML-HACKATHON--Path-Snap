@@ -4,14 +4,14 @@ on:
   push:
     branches: [ main, hmm-baseline ]
     paths:
-      - 'baseline_hmm.py'
-      - 'test_hmm.py'
+      - 'src/baseline_hmm.py'
+      - 'src/test_hmm.py'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'baseline_hmm.py'
-      - 'test_hmm.py'
+      - 'src/baseline_hmm.py'
+      - 'src/test_hmm.py'
       - '.github/workflows/ci.yml'
 
 jobs:
@@ -34,8 +34,10 @@ jobs:
 
       - name: Syntax check (HMM)
         run: |
-          python -m py_compile baseline_hmm.py test_hmm.py
+          python -m py_compile src/baseline_hmm.py src/test_hmm.py
 
       - name: Run HMM unit tests
+        env:
+          PYTHONPATH: src
         run: |
-          python -m unittest test_hmm.py -v
+          python -m unittest discover -s src -p "test_*.py" -v

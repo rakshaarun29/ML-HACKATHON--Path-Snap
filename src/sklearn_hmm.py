@@ -23,6 +23,7 @@ from baseline_hmm import (
     dijkstra_to_targets,
     reconstruct_node_path,
     evaluate_route,
+    save_results_txt,
 )
 
 
@@ -286,7 +287,8 @@ def sklearn_hmm_match(nodes_xy, arcs, track_xy, emit_clf, trans_clf):
 
 def main():
     """Train HGBC emission/transition classifiers on train/ and evaluate on student_test/."""
-    root = Path(__file__).resolve().parent / "Student folder"
+    proj_root = Path(__file__).resolve().parent.parent
+    root = proj_root / "Student folder"
     t0 = time.perf_counter()
     print("Extracting features from train (80 samples)...")
     X_emit, y_emit, X_trans, y_trans = collect_training_data(root / "train", max_samples=80)
@@ -305,6 +307,7 @@ def main():
     print("-" * 70)
 
     metrics = []
+    result_rows = []
     for s in test_samples:
         ts = time.perf_counter()
         nodes, arcs, track, route = load_sample(s)
@@ -313,6 +316,7 @@ def main():
         dt = time.perf_counter() - ts
         m = evaluate_route(pred_route, route, arc_lens)
         metrics.append(m)
+        result_rows.append((s.name, m["f1_cnt"], m["f1_len"]))
         print(
             f"{s.name:<10} {m['pred_n']:>6} {m['true_n']:>6} "
             f"{m['f1_cnt']*100:>7.2f}% {m['prec_len']*100:>7.2f}% "
@@ -329,6 +333,10 @@ def main():
         f"{mean_cnt_f1*100:>7.2f}% {mean_len_p*100:>7.2f}% "
         f"{mean_len_r*100:>7.2f}% {mean_len_f1*100:>7.2f}%"
     )
+
+    out_txt = proj_root / "report" / "results.txt"
+    save_results_txt("sklearn_HGBC", result_rows, out_txt)
+    print(f"\nSaved accuracies to {out_txt}")
 
 
 if __name__ == "__main__":

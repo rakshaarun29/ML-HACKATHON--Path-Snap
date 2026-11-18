@@ -356,9 +356,30 @@ def evaluate_route(pred: list, true: list, arc_lens: np.ndarray):
     }
 
 
+def save_results_txt(model_name: str, rows: list, out_path: Path):
+    """Write or update (model_name, sample_id, cnt_f1, len_f1) rows in a plain-text results file."""
+    existing = []
+    if out_path.exists():
+        with open(out_path, "r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if stripped.split()[0] != model_name:
+                    existing.append(stripped)
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("# Format: model_name  sample_id  cnt_f1  len_f1\n")
+        for line in existing:
+            f.write(line + "\n")
+        for sid, cnt_f1, len_f1 in rows:
+            f.write(f"{model_name}  {sid}  {cnt_f1 * 100:.2f}  {len_f1 * 100:.2f}\n")
+
+
 def main():
     """Run and benchmark the HMM baseline across all student_test samples."""
-    base = Path(__file__).resolve().parent / "Student folder" / "student_test"
+    root = Path(__file__).resolve().parent.parent
+    base = root / "Student folder" / "student_test"
     samples = sorted([d for d in base.iterdir() if d.is_dir()])
 
     print(f"Evaluating HMM baseline on {len(samples)} student_test samples...\n")
@@ -366,6 +387,7 @@ def main():
     print("-" * 70)
 
     metrics = []
+    result_rows = []
     for s in samples:
         t0 = time.perf_counter()
         nodes, arcs, track, route = load_sample(s)
@@ -374,6 +396,7 @@ def main():
         dt = time.perf_counter() - t0
         m = evaluate_route(pred_route, route, arc_lens)
         metrics.append(m)
+        result_rows.append((s.name, m["f1_cnt"], m["f1_len"]))
         print(
             f"{s.name:<10} {m['pred_n']:>6} {m['true_n']:>6} "
             f"{m['f1_cnt']*100:>7.2f}% {m['prec_len']*100:>7.2f}% "
@@ -390,6 +413,10 @@ def main():
         f"{mean_cnt_f1*100:>7.2f}% {mean_len_p*100:>7.2f}% "
         f"{mean_len_r*100:>7.2f}% {mean_len_f1*100:>7.2f}%"
     )
+
+    out_txt = root / "report" / "results.txt"
+    save_results_txt("HMM_Smoothed", result_rows, out_txt)
+    print(f"\nSaved accuracies to {out_txt}")
 
 
 if __name__ == "__main__":
