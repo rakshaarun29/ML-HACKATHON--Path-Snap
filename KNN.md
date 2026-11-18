@@ -21,3 +21,10 @@ The training script sorts example folders by ID, uses the first 64 for choosing 
 The best of `k = 1, 5, 10, 20` was `k = 20`. Mean tuning score was 58.1% across 64 examples; held-out score was 63.9% across 16 examples. The score is the mean fraction of GPS point matches whose selected arc appears anywhere in that example's reference `.route`.
 
 This baseline does not yet connect selected arcs into a complete route. Its score is not a full-route metric and should only be compared with another model using the same examples and scoring definition.
+
+## Charts
+
+![KNN tuning scores by k](charts/knn_tuning.svg)
+
+![KNN versus MLP point-match rates](charts/model_comparison.svg)
+

@@ -8,3 +8,4 @@ train/
 student_test/
 Student folder/
 *.zip
+artifacts/
