@@ -1,4 +1,4 @@
-"""Train an MLP to rank nearby road arcs for each GPS observation.
+r"""Train an MLP to rank nearby road arcs for each GPS observation.
 
 Run from the repository root:
     python src/train_mlp.py "C:\path\to\Student folder\train"

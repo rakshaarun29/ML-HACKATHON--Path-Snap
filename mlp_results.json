@@ -1,0 +1,29 @@
+{
+  "method": "MLP candidate-arc point matching",
+  "score_definition": "fraction of GPS point arc matches present in reference route",
+  "training_count": 64,
+  "validation_count": 16,
+  "k": 20,
+  "max_points_per_training_example": 250,
+  "training_rows": 297520,
+  "validation_scores": {
+    "00000081": 0.9351736972704715,
+    "00000082": 0.5288191190253045,
+    "00000083": 0.5899137358991373,
+    "00000084": 0.5833697211652423,
+    "00000085": 0.815018315018315,
+    "00000086": 0.909244508810041,
+    "00000088": 0.75,
+    "00000089": 0.7043973941368078,
+    "00000090": 0.8936567164179104,
+    "00000092": 0.8727825646224024,
+    "00000093": 0.7027250206440958,
+    "00000095": 0.7646679561573179,
+    "00000096": 0.8174870070314888,
+    "00000097": 0.95,
+    "00000098": 0.9401862464183381,
+    "00000099": 0.8518518518518519
+  },
+  "mean_validation_score": 0.7880808659042953,
+  "note": "Point matches are not a connected route; this is not the hackathon route metric."
+}

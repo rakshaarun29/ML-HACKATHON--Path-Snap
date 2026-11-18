@@ -16,3 +16,8 @@ python .\src\train_mlp.py "C:\Users\ruska\Downloads\Student folder\Student folde
 The script uses the same sorted 64/16 example split and the same point-match score as the KNN branch. It writes `mlp_results.json` and a local model file under `artifacts/`. The model file is excluded from Git by default.
 
 The held-out score is the mean fraction of selected GPS point arcs that appear in the reference route. This baseline does not connect those arcs into a complete route and cannot be treated as the hackathon's full-route score.
+
+## Recorded result
+
+On the 16 held-out examples, the MLP point-match score was **78.8%** (mean across examples). The KNN baseline scored **63.9%** on the same split and metric, a difference of **14.9 percentage points**. The full per-example MLP results are in mlp_results.json.
+
