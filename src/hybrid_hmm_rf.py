@@ -264,6 +264,7 @@ def evaluate_split(samples, rf_clf, hmm_cfg, rf_weight: float):
     rows = []
     metrics = []
     total_t = 0.0
+    tp = fp = fn = tn = exact_matches = 0
     for s in samples:
         t0 = time.perf_counter()
         n, a, t, r = load_sample(s)
@@ -273,7 +274,18 @@ def evaluate_split(samples, rf_clf, hmm_cfg, rf_weight: float):
         m = evaluate_route(pred, r, alens)
         metrics.append(m)
         rows.append((s.name, m["f1_cnt"], m["f1_len"]))
-    return metrics, rows, total_t
+        ps, ts = set(pred), set(r)
+        s_tp = len(ps & ts)
+        s_fp = len(ps - ts)
+        s_fn = len(ts - ps)
+        tp += s_tp
+        fp += s_fp
+        fn += s_fn
+        tn += len(a) - (s_tp + s_fp + s_fn)
+        if pred == r:
+            exact_matches += 1
+    top1_arc_acc = (tp + tn) / (tp + tn + fp + fn) * 100.0
+    return metrics, rows, total_t, top1_arc_acc, exact_matches
 
 
 def main():
@@ -294,10 +306,10 @@ def main():
     best_w, best_score = 0.0, -1.0
     print("Tuning rf_weight on student_test:")
     for w in (0.25, 0.5, 1.0, 2.0):
-        ms, _, dt = evaluate_split(student_samples, rf_clf, hmm_cfg, rf_weight=w)
+        ms, _, dt, top1, exact = evaluate_split(student_samples, rf_clf, hmm_cfg, rf_weight=w)
         cnt = float(np.mean([m["f1_cnt"] for m in ms]) * 100)
         lenf = float(np.mean([m["f1_len"] for m in ms]) * 100)
-        print(f"  rf_weight={w:<4} -> Cnt-F1={cnt:.2f}% | Len-F1={lenf:.2f}% ({dt:.1f}s)")
+        print(f"  rf_weight={w:<4} -> Cnt-F1={cnt:.2f}% | Len-F1={lenf:.2f}% | Top-1={top1:.4f}% ({dt:.1f}s)")
         if (lenf + cnt) > best_score:
             best_score = lenf + cnt
             best_w = w
@@ -316,7 +328,7 @@ def main():
         ("student_test", student_samples, root / "report" / "results.txt"),
         ("evaluator_test", eval_samples, root / "report" / "evaluator_results.txt"),
     ]:
-        ms, rows, dt = evaluate_split(samples, rf_clf, hmm_cfg, rf_weight=best_w)
+        ms, rows, dt, top1, exact = evaluate_split(samples, rf_clf, hmm_cfg, rf_weight=best_w)
         print(f"=== Hybrid_HMM_RF (w={best_w}) on {split_name} ===")
         for (sid, cnt, lenf), m in zip(rows, ms):
             print(f"  {sid}: pred={m['pred_n']:>4} true={m['true_n']:>4} Cnt-F1={cnt*100:.2f}% Len-F1={lenf*100:.2f}%")
@@ -324,7 +336,8 @@ def main():
             f"  MEAN: Cnt-F1={np.mean([m['f1_cnt'] for m in ms])*100:.2f}% | "
             f"Len-P={np.mean([m['prec_len'] for m in ms])*100:.2f}% | "
             f"Len-R={np.mean([m['rec_len'] for m in ms])*100:.2f}% | "
-            f"Len-F1={np.mean([m['f1_len'] for m in ms])*100:.2f}% ({dt:.1f}s)\n"
+            f"Len-F1={np.mean([m['f1_len'] for m in ms])*100:.2f}% | "
+            f"Arc Top-1={top1:.4f}% | Exact={exact}/{len(samples)} ({dt:.1f}s)\n"
         )
         save_results_txt("Hybrid_HMM_RF", rows, out_txt)
 

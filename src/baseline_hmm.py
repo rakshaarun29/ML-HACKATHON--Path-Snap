@@ -390,6 +390,7 @@ def main():
 
     metrics = []
     result_rows = []
+    tp = fp = fn = tn = exact_matches = 0
     for s in samples:
         t0 = time.perf_counter()
         nodes, arcs, track, route = load_sample(s)
@@ -399,6 +400,18 @@ def main():
         m = evaluate_route(pred_route, route, arc_lens)
         metrics.append(m)
         result_rows.append((s.name, m["f1_cnt"], m["f1_len"]))
+
+        ps, ts = set(pred_route), set(route)
+        s_tp = len(ps & ts)
+        s_fp = len(ps - ts)
+        s_fn = len(ts - ps)
+        tp += s_tp
+        fp += s_fp
+        fn += s_fn
+        tn += len(arcs) - (s_tp + s_fp + s_fn)
+        if pred_route == route:
+            exact_matches += 1
+
         print(
             f"{s.name:<10} {m['pred_n']:>6} {m['true_n']:>6} "
             f"{m['f1_cnt']*100:>7.2f}% {m['prec_len']*100:>7.2f}% "
@@ -410,11 +423,13 @@ def main():
     mean_len_p = sum(m["prec_len"] for m in metrics) / len(metrics)
     mean_len_r = sum(m["rec_len"] for m in metrics) / len(metrics)
     mean_len_f1 = sum(m["f1_len"] for m in metrics) / len(metrics)
+    top1_arc_acc = (tp + tn) / (tp + tn + fp + fn) * 100.0
     print(
         f"{'MEAN':<10} {'':>6} {'':>6} "
         f"{mean_cnt_f1*100:>7.2f}% {mean_len_p*100:>7.2f}% "
         f"{mean_len_r*100:>7.2f}% {mean_len_f1*100:>7.2f}%"
     )
+    print(f"Arc Top-1 Accuracy: {top1_arc_acc:.4f}% | Exact Route Match: {exact_matches}/{len(samples)} ({exact_matches/len(samples)*100:.0f}%)")
 
     out_txt = root / "report" / "results.txt"
     save_results_txt("HMM_Smoothed", result_rows, out_txt)

@@ -4,11 +4,12 @@ Evaluation of **`HMM_Smoothed`** (`src/baseline_hmm.py`) and **`sklearn_HGBC`** 
 
 ## 1. Summary
 
-| Model | Mean Cnt-F1 | Mean Len-F1 |
-| :--- | :---: | :---: |
-| **`HMM_Smoothed`** (`src/baseline_hmm.py`) | **99.39%** | **99.72%** |
-| **`HMM_Unsmoothed`** (`src/baseline_hmm.py`, `use_smoothing=False`) | 97.63% | 98.42% |
-| **`sklearn_HGBC`** (`models/sklearn_hgbc_hmm.joblib`) | 93.21% | 96.12% |
+| Model | Mean Cnt-F1 | Mean Len-F1 | Arc Top-1 Acc | Exact Route Match |
+| :--- | :---: | :---: | :---: | :---: |
+| **`HMM_Smoothed`** (`src/baseline_hmm.py`) | **99.39%** | **99.72%** | **99.9894%** | **2/10 (20%)** |
+| **`Hybrid_HMM_RF`** (`models/hybrid_hmm_rf.joblib`) | **99.39%** | 99.63% | 99.9882% | **2/10 (20%)** |
+| **`HMM_Unsmoothed`** (`src/baseline_hmm.py`, `use_smoothing=False`) | 97.63% | 98.42% | — | — |
+| **`sklearn_HGBC`** (`models/sklearn_hgbc_hmm.joblib`) | 93.21% | 96.12% | — | — |
 
 ![Evaluator Accuracy Comparison](evaluator_accuracy_comparison.png)
 

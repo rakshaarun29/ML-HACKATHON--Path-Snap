@@ -21,12 +21,12 @@ Weight sweep on `student_test`:
 
 ## 2. Benchmark Summary
 
-| Split | Model | Mean Cnt-F1 | Mean Len-P | Mean Len-R | Mean Len-F1 |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **`student_test`** | **`Hybrid_HMM_RF (w=0.5)`** | **98.96%** | 99.05% | **99.67%** | **99.36%** |
-| **`student_test`** | `HMM_Smoothed` | 98.92% | **99.09%** | 99.63% | 99.35% |
-| **`evaluator_test`** | **`Hybrid_HMM_RF (w=0.5)`** | **99.39%** | 99.52% | 99.75% | 99.63% |
-| **`evaluator_test`** | `HMM_Smoothed` | **99.39%** | **99.66%** | **99.78%** | **99.72%** |
+| Split | Model | Mean Cnt-F1 | Mean Len-P | Mean Len-R | Mean Len-F1 | Arc Top-1 Acc | Exact Route Match |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`student_test`** | **`Hybrid_HMM_RF (w=0.5)`** | **98.96%** | 99.05% | **99.67%** | **99.36%** | **99.9670%** | 1/10 (10%) |
+| **`student_test`** | `HMM_Smoothed` | 98.92% | **99.09%** | 99.63% | 99.35% | 99.9649% | 1/10 (10%) |
+| **`evaluator_test`** | **`Hybrid_HMM_RF (w=0.5)`** | **99.39%** | 99.52% | 99.75% | 99.63% | 99.9882% | **2/10 (20%)** |
+| **`evaluator_test`** | `HMM_Smoothed` | **99.39%** | **99.66%** | **99.78%** | **99.72%** | **99.9894%** | **2/10 (20%)** |
 
 ![student_test Accuracy Comparison](accuracy_comparison.png)
 
