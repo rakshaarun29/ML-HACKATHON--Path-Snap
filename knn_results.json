@@ -1,0 +1,16 @@
+{
+  "method": "nearest road segment KNN baseline",
+  "score_definition": "fraction of GPS point arc matches present in reference route",
+  "example_count": 80,
+  "tuning_count": 64,
+  "validation_count": 16,
+  "tuning_scores": {
+    "1": 0.4959856894922672,
+    "5": 0.5421848576803329,
+    "10": 0.5638267828377033,
+    "20": 0.5813854596382415
+  },
+  "best_k": 20,
+  "validation_score": 0.6385158409685017,
+  "note": "Point matches are not yet a connected route; this is not the hackathon metric."
+}

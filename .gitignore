@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+# Local hackathon data stays out of this public repository.
+data/
+train/
+student_test/
+Student folder/
+*.zip
