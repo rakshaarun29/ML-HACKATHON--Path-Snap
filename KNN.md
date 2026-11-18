@@ -22,6 +22,10 @@ The best of `k = 1, 5, 10, 20` was `k = 20`. Mean tuning score was 58.1% across 
 
 This baseline does not yet connect selected arcs into a complete route. Its score is not a full-route metric and should only be compared with another model using the same examples and scoring definition.
 
+## New evaluator set
+
+Using the fixed `k=20` setting on the 10 journeys in `evaluator_test`, the mean GPS point-to-road match rate is **59.0%**. The per-journey scores and metric definition are saved in `knn_evaluator_results.json`. The evaluator `.route` files were used only for scoring, not for choosing `k`.
+
 ## Charts
 
 ![KNN tuning scores by k](charts/knn_tuning.svg)

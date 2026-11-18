@@ -1,0 +1,20 @@
+{
+  "model": "KNN",
+  "metric": "mean fraction of GPS point arc matches present in reference route",
+  "test_set": "evaluator_test",
+  "example_count": 10,
+  "per_example_scores": {
+    "00000015": 0.46323314852640796,
+    "00000017": 0.48291233283803864,
+    "00000023": 0.48034934497816595,
+    "00000030": 0.6467889908256881,
+    "00000049": 0.514004542013626,
+    "00000059": 0.5063045586808923,
+    "00000067": 0.769650655021834,
+    "00000073": 0.6127622377622378,
+    "00000087": 0.7598284488920658,
+    "00000094": 0.6622291021671827
+  },
+  "mean_score": 0.589806336170614,
+  "note": "This scores point matches, not completed connected routes."
+}
