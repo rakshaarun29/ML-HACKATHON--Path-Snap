@@ -9,7 +9,7 @@ import numpy as np
 
 def main():
     root = Path(__file__).resolve().parent.parent
-    test_dir = root / "Student folder" / "student_test"
+    test_dir = root.parent / "Student folder" / "student_test"
     pred_dir = root / "predictions"
 
     tp = fp = fn = tn = 0

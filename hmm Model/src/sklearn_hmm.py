@@ -289,7 +289,7 @@ def sklearn_hmm_match(nodes_xy, arcs, track_xy, emit_clf, trans_clf):
 def main():
     """Train HGBC emission/transition classifiers on train/ and evaluate on student_test/."""
     proj_root = Path(__file__).resolve().parent.parent
-    root = proj_root / "Student folder"
+    root = proj_root.parent / "Student folder"
     t0 = time.perf_counter()
     print("Extracting features from train (80 samples)...")
     X_emit, y_emit, X_trans, y_trans = collect_training_data(root / "train", max_samples=80)

@@ -129,9 +129,10 @@ def plot_eval_accuracies(samples: list, hmm_rows: list, un_rows: list, sk_rows: 
 
 def main():
     root = Path(__file__).resolve().parent.parent
-    eval_dir = root / "evaluator_test" / "evaluator_test"
+    data_root = root.parent
+    eval_dir = data_root / "evaluator_test" / "evaluator_test"
     if not eval_dir.exists():
-        eval_dir = root / "evaluator_test"
+        eval_dir = data_root / "evaluator_test"
     samples = sorted([d for d in eval_dir.iterdir() if d.is_dir()])
 
     pred_dir = root / "predictions" / "evaluator_test"

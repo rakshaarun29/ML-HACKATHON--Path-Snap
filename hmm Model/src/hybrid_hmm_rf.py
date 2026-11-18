@@ -290,16 +290,17 @@ def evaluate_split(samples, rf_clf, hmm_cfg, rf_weight: float):
 
 def main():
     root = Path(__file__).resolve().parent.parent
+    data_root = root.parent
     hmm_cfg = json.loads((root / "models" / "hmm_config.json").read_text(encoding="utf-8"))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         rf_bundle = joblib.load(root / "models" / "random_forest_model.joblib")
     rf_clf = rf_bundle["model"]
 
-    student_samples = sorted([d for d in (root / "Student folder" / "student_test").iterdir() if d.is_dir()])
-    eval_dir = root / "evaluator_test" / "evaluator_test"
+    student_samples = sorted([d for d in (data_root / "Student folder" / "student_test").iterdir() if d.is_dir()])
+    eval_dir = data_root / "evaluator_test" / "evaluator_test"
     if not eval_dir.exists():
-        eval_dir = root / "evaluator_test"
+        eval_dir = data_root / "evaluator_test"
     eval_samples = sorted([d for d in eval_dir.iterdir() if d.is_dir()])
 
     # Quick sweep of rf_weight on student_test to pick best hybrid blend

@@ -381,7 +381,7 @@ def save_results_txt(model_name: str, rows: list, out_path: Path):
 def main():
     """Run and benchmark the HMM baseline across all student_test samples."""
     root = Path(__file__).resolve().parent.parent
-    base = root / "Student folder" / "student_test"
+    base = root.parent / "Student folder" / "student_test"
     samples = sorted([d for d in base.iterdir() if d.is_dir()])
 
     print(f"Evaluating HMM baseline on {len(samples)} student_test samples...\n")

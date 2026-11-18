@@ -153,7 +153,7 @@ def fast_viterbi(precomputed, sigma_z: float, beta: float):
 
 def main():
     """Run 5-fold CV grid search on train/ and evaluate the best parameters on student_test/."""
-    root = Path(__file__).resolve().parent.parent / "Student folder"
+    root = Path(__file__).resolve().parent.parent.parent / "Student folder"
     all_train = sorted([d for d in (root / "train").iterdir() if d.is_dir()])
     # Pick 30 evenly spaced train samples (excluding >3MB graph outliers for fast CV)
     filtered_train = [
