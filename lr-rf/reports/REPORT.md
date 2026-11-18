@@ -61,3 +61,35 @@ Models predict continuous arc-membership scores $y \\in \\{0, 1\\}$, and each GP
 2. **Classifier Gap (+12.41 pp Length-F1):** Under binary classification on `evaluator_test`, **Random Forest Classifier** (`84.64%` Length-F1, `77.71%` Count-F1) beats **Logistic Regression** (`72.23%` Length-F1, `64.87%` Count-F1) by **+12.41 percentage points**, confirming that a single linear hyperplane struggles with multi-lane and intersection geometry.
 3. **Greedy Top-1 Tie-Breaking Behavior:** Under continuous OLS regression, **Linear Regression** slightly edges out **Random Forest Regressor** on `evaluator_test` route F1 (`83.98%` vs. `82.86%` Length-F1) because continuous linear combinations assign distinct real-valued scores to closely spaced parallel arcs, whereas shallow (`max_depth=12`) tree leaves can assign identical average leaf values to candidates falling in the same terminal node.
 4. **Inherent Ceiling of Pointwise Models (~83%–85% Length-F1):** Evaluating each GPS ping independently without global path constraints causes occasional arc-hopping at dense urban intersections, bounding standalone pointwise accuracy around `84.6%` Route Length-F1.
+
+---
+
+## 6. Bayesian Hyperparameter Optimisation (Random Forest) & Viterbi Route Reconstruction
+
+Using `src/bayes_tune_rf.py`, `src/compare_untuned_vs_tuned_rf.py`, and `src/rf_viterbi.py` (with Savitzky–Golay smoothed tracks and 5-fold `GroupKFold` CV over 25 `train` trajectories):
+
+* **Search Space (15 Trials: 5 random init + 10 GP Matérn-5/2 Expected Improvement):** `n_estimators` $\in [25, 120]$, `max_depth` $\in [5, 18]$, `min_samples_leaf` $\in [5, 60]$, `max_features` $\in [0.3, 1.0]$.
+* **Objective:** Minimize 5-fold `GroupKFold` CV Log Loss (best Log Loss at Trial 11: `n_estimators=29, max_depth=6, min_samples_leaf=8, max_features=0.317`; best AUC at Trial 13: `n_estimators=107, max_depth=8, min_samples_leaf=8, max_features=0.974`, `CV AUC=0.9426`).
+
+### 6.1 Untuned vs. Bayesian-Tuned RF (Identical Partitions)
+
+| Metric | Untuned RF (`n=100, depth=None`) | Bayesian-Tuned RF (`n=29, depth=6`) |
+| :--- | :---: | :---: |
+| **CV Macro F1-score** | **0.9026** | 0.8943 |
+| **CV Log Loss** | 0.3268 | **0.2801** |
+| **`student_test` Top-1 Accuracy** | **91.12%** | 90.07% |
+| **`student_test` Macro F1-score** | **0.9055** | 0.8945 |
+| **`student_test` Log Loss** | 0.3005 | **0.2712** |
+| **Candidate Inference Time** | 0.056s | **0.039s** |
+| **Route Viterbi Time (`student_test`)** | 9.80s | **9.15s** |
+
+![Bayesian Optimization RF Loss Curve](figures/rf_bayes_loss_curve.png)
+
+### 6.2 Raw RF vs. RF + Viterbi Route Reconstruction (`student_test`)
+
+| Method (No Analytical HMM Formulas) | `student_test` Cnt-F1 | `student_test` Len-F1 | Runtime |
+| :--- | :---: | :---: | :---: |
+| **Raw RF Predictions (no Viterbi)** | 82.88% | 92.98% | 266.34s |
+| **RF + Viterbi Route Reconstruction** | **98.03%** (**+15.15 pp**) | **98.99%** (**+6.01 pp**) | **9.15s** |
+
+With the CV-AUC-optimal Bayesian RF (`artifacts/rf_bayes_tuned.joblib`), **Pure RF + Viterbi** reaches **98.47% Cnt-F1 / 99.02% Len-F1** on `student_test` and **98.16% Cnt-F1 / 99.27% Len-F1** on `evaluator_test`.

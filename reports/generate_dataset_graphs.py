@@ -21,12 +21,11 @@ SOURCE = ROOT / "hmm Model" / "report"
 DEST = ROOT / "reports"
 
 MODELS = [
-    ("HMM + smoothing", "HMM_Smoothed", "HMM_Smoothed"),
+    ("RF (Bayesian-Tuned) + Viterbi", "RF_Bayes_Tuned", "RF_Bayes_Tuned"),
     ("Hybrid HMM + RF", "Hybrid_HMM_RF", "Hybrid_HMM_RF"),
-    ("HMM, unsmoothed", "HMM_Baseline", "HMM_Unsmoothed"),
     ("HGBC + Viterbi", "sklearn_HGBC", "sklearn_HGBC"),
 ]
-COLORS = ["#2563eb", "#0891b2", "#7c3aed", "#d97706"]
+COLORS = ["#2563eb", "#0891b2", "#d97706"]
 
 
 def read_scores(filename):
@@ -102,7 +101,7 @@ fig, ax = plt.subplots(figsize=(10, 5.7), dpi=150)
 fig.patch.set_facecolor("#f8fafc")
 ax.set_facecolor("#f8fafc")
 for i, (label, before, after, color) in enumerate(zip(labels, old_means, new_means, COLORS)):
-    y = 3 - i
+    y = len(MODELS) - 1 - i
     ax.plot([before, after], [y, y], color="#b9c6d8", lw=5, zorder=1)
     ax.scatter(before, y, s=145, facecolor="white", edgecolor=color,
                linewidth=2.5, zorder=3)
@@ -112,7 +111,7 @@ for i, (label, before, after, color) in enumerate(zip(labels, old_means, new_mea
     ax.text(100.16, y, f"{after-before:+.2f} pp", va="center", color=color,
             weight="bold", fontsize=11)
 ax.set_xlim(95, 101.5)
-ax.set_ylim(-0.65, 3.7)
+ax.set_ylim(-0.65, len(MODELS) - 0.3)
 ax.set_yticks([])
 ax.set_xticks([95, 96, 97, 98, 99, 100])
 ax.xaxis.set_major_formatter(PercentFormatter(100, decimals=0))
