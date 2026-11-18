@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800" viewBox="0 0 1000 800" role="img" aria-labelledby="title desc">
+  <title id="title">Reported model performance by metric</title>
+  <desc id="desc">Three separate comparisons. GPS point match rate: KNN 63.85 percent, MLP 78.81 percent. Top-one arc accuracy: logistic regression 79.04 percent, random forest 80.35 percent. Route length F1: HMM 98.84 percent, HMM with smoothing 99.35 percent, HGBC with Viterbi 97.07 percent. Different groups use different metrics and evaluation sets.</desc>
+  <rect width="1000" height="800" fill="#f8fafc"/>
+  <text x="50" y="55" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#172033">Reported model performance</text>
+  <text x="50" y="84" font-family="Arial, sans-serif" font-size="15" fill="#475569">Percent scores from model branches · compare bars within each section</text>
+
+  <rect x="34" y="110" width="932" height="177" rx="14" fill="#ffffff" stroke="#dce3ec"/>
+  <text x="55" y="144" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#172033">GPS point-to-road match rate</text>
+  <text x="55" y="166" font-family="Arial, sans-serif" font-size="13" fill="#64748b">16 held-out train examples · individual point matches, not connected routes</text>
+  <text x="55" y="211" font-family="Arial, sans-serif" font-size="16" fill="#172033">KNN (k=20)</text>
+  <rect x="257" y="192" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="192" width="383.1" height="24" rx="5" fill="#2563eb"/>
+  <text x="875" y="211" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">63.85%</text>
+  <text x="55" y="254" font-family="Arial, sans-serif" font-size="16" fill="#172033">MLP</text>
+  <rect x="257" y="235" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="235" width="472.9" height="24" rx="5" fill="#2563eb"/>
+  <text x="875" y="254" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">78.81%</text>
+
+  <rect x="34" y="302" width="932" height="177" rx="14" fill="#ffffff" stroke="#dce3ec"/>
+  <text x="55" y="336" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#172033">Top-one arc accuracy</text>
+  <text x="55" y="358" font-family="Arial, sans-serif" font-size="13" fill="#64748b">10 student_test examples · score reported by the LR/RF branch</text>
+  <text x="55" y="403" font-family="Arial, sans-serif" font-size="16" fill="#172033">Logistic regression</text>
+  <rect x="257" y="384" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="384" width="474.2" height="24" rx="5" fill="#0d9488"/>
+  <text x="875" y="403" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">79.04%</text>
+  <text x="55" y="446" font-family="Arial, sans-serif" font-size="16" fill="#172033">Random forest</text>
+  <rect x="257" y="427" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="427" width="482.1" height="24" rx="5" fill="#0d9488"/>
+  <text x="875" y="446" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">80.35%</text>
+
+  <rect x="34" y="494" width="932" height="218" rx="14" fill="#ffffff" stroke="#dce3ec"/>
+  <text x="55" y="528" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#172033">Route length F1</text>
+  <text x="55" y="550" font-family="Arial, sans-serif" font-size="13" fill="#64748b">10 student_test examples · completed route comparison</text>
+  <text x="55" y="593" font-family="Arial, sans-serif" font-size="16" fill="#172033">HMM</text>
+  <rect x="257" y="574" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="574" width="593.0" height="24" rx="5" fill="#7c3aed"/>
+  <text x="875" y="593" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">98.84%</text>
+  <text x="55" y="636" font-family="Arial, sans-serif" font-size="16" fill="#172033">HMM + smoothing</text>
+  <rect x="257" y="617" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="617" width="596.1" height="24" rx="5" fill="#7c3aed"/>
+  <text x="875" y="636" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">99.35%</text>
+  <text x="55" y="679" font-family="Arial, sans-serif" font-size="16" fill="#172033">HGBC + Viterbi</text>
+  <rect x="257" y="660" width="600" height="24" rx="5" fill="#e6ecf3"/>
+  <rect x="257" y="660" width="582.4" height="24" rx="5" fill="#7c3aed"/>
+  <text x="875" y="679" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">97.07%</text>
+
+  <text x="50" y="750" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#334155">Different sections use different metrics and evaluation sets.</text>
+  <text x="50" y="773" font-family="Arial, sans-serif" font-size="13" fill="#64748b">Source files and score definitions: reports/README.md</text>
+</svg>
