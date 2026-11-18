@@ -1,13 +1,21 @@
-name: CI
+name: HMM CI
 
 on:
   push:
     branches: [ main, hmm-baseline ]
+    paths:
+      - 'baseline_hmm.py'
+      - 'test_hmm.py'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'baseline_hmm.py'
+      - 'test_hmm.py'
+      - '.github/workflows/ci.yml'
 
 jobs:
-  test:
+  test-hmm:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,15 +27,15 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
+      - name: Install HMM dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy scipy scikit-learn
+          pip install numpy scipy
 
-      - name: Syntax check
+      - name: Syntax check (HMM)
         run: |
-          python -m py_compile baseline_hmm.py sklearn_hmm.py grid_search_cv.py test_hmm.py
+          python -m py_compile baseline_hmm.py test_hmm.py
 
-      - name: Run unit tests
+      - name: Run HMM unit tests
         run: |
           python -m unittest test_hmm.py -v
