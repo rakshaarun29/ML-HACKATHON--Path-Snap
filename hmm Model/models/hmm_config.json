@@ -1,0 +1,16 @@
+{
+  "model": "HMM_Smoothed",
+  "smoothing": {
+    "method": "savgol",
+    "window": 7,
+    "polyorder": 2,
+    "gap_threshold_s": 5.0
+  },
+  "subsample_min_step_m": 20.0,
+  "spatial_index_sample_step_m": 40.0,
+  "cand_radius_m": 60.0,
+  "max_cands": 12,
+  "sigma_z_m": 15.0,
+  "beta_m": 25.0,
+  "initial_state_prior": "uniform_over_candidates"
+}
